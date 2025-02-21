@@ -59,6 +59,7 @@ The current stack has a user data script that:
  - updates the packages
  - installs docker and adds it to the ubuntu user group
  - pulls a docker-image from docker hub
+ - and runs the container mapping port 80:80 with a restart policy
 
 ## CDK Stack Details
 
