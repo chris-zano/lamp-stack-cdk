@@ -51,6 +51,7 @@ export class LampStack extends Stack {
       allowAllOutbound: true,
     });
     instanceSecurityGroup.addIngressRule(albSecurityGroup, ec2.Port.tcp(80), 'Allow HTTP from ALB');
+    instanceSecurityGroup.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.tcp(22), 'Allow SSH');
 
     const dbSecurityGroup = new ec2.SecurityGroup(this, `${projectName}-DatabaseSG`, {
       vpc,
@@ -76,10 +77,12 @@ export class LampStack extends Stack {
       machineImage: ec2.MachineImage.genericLinux({
         'eu-west-1': 'ami-032a56ad5e480189c', // Ubuntu 22.04 LTS AMI ID for eu-west-1
       }),
-      minCapacity: 1,
-      maxCapacity: 3,
+      minCapacity: 0,
+      desiredCapacity: 1,
+      maxCapacity: 2,
       vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
       securityGroup: instanceSecurityGroup,
+      keyPair:ec2.KeyPair.fromKeyPairName(this, 'KeyPair', 'lab-key-pair'),
       userData: ec2.UserData.custom(`#!/bin/bash\n\n# Update system packages\nsudo apt update -y && sudo apt upgrade -y\n\n# Install Docker\nsudo apt install -y docker.io\nsudo systemctl enable docker\nsudo systemctl start docker\n\n# Add current user to the Docker group\nsudo usermod -aG docker ubuntu\n\n# Pull the PHP server Docker image from Docker Hub\nsudo docker pull chrisncs/php-server:latest\n\n# Run the Docker container, mapping port 80 to 80\nsudo docker run -d --restart unless-stopped --name php-server -p 80:80 chrisncs/php-server:latest`),
     });
 
